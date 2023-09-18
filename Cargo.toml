@@ -5,6 +5,9 @@ edition = "2021"
 description = "Search and fetch information about anime and manga"
 keywords = ["cli", "anime", "manga", "search", "weeb", "kitsu"]
 license = "MIT"
+readme = "README.md"
+authors = ["Lars Jönsson crymeat@gmail.com"]
+repository = "https://github.com/devpaps/aniterm"
 include = [
     "**/*.rs",
     "Cargo.toml",
