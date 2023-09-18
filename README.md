@@ -19,8 +19,6 @@ If you have `Cargo` installed on you machine just run this in your terminal:
 
 ## Usage
 
-To search for an anime:
-
 #####  To search for an anime:
 `aniterm -a "Cowboy Bebop"`
 
