@@ -30,7 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn get_url(request: Vec<String>, what_type: &str) -> Result<Option<AnimeData>, reqwest::Error> {
+async fn get_url(
+    request: Vec<String>,
+    what_type: &str,
+) -> Result<Option<AnimeData>, reqwest::Error> {
     let anime_name = request.join(" ");
     let mut url = String::new();
     match what_type {
@@ -54,16 +57,6 @@ async fn get_url(request: Vec<String>, what_type: &str) -> Result<Option<AnimeDa
         .await?
         .json()
         .await?;
-
-    // if let Some(anime_list) = response.data {
-    //     anime_list.first().cloned().into_iter().for_each(|anime| {
-    //         if let Some(relationships) = anime.relationships {
-    //             let genres = relationships.genres.map(|a| a.links.map(|b| b.related));
-    // println!("{:#?}", genres);
-    //         }
-    //     })
-    // }
-
 
     if let Some(anime_list) = response.data {
         anime_list.first().cloned().into_iter().for_each(|anime| {
@@ -98,12 +91,13 @@ async fn get_url(request: Vec<String>, what_type: &str) -> Result<Option<AnimeDa
                     format!(
                         "https://www.youtube.com/watch?v={}",
                         attributes
-                            .youtubeVideoId
-                            .unwrap_or("Not available".to_string())
+                        .youtubeVideoId
+                        .unwrap_or("Not available".to_string())
                     )
                 } else {
                     "Not available".to_string()
                 };
+
                 let current_status = attributes.status.unwrap_or("Not available".to_string());
                 let description = attributes
                     .description
@@ -149,7 +143,7 @@ async fn get_url(request: Vec<String>, what_type: &str) -> Result<Option<AnimeDa
                 // table3.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
                 // table3.printstd();
 
-                println!("\n=== Basic Info ===");
+                println!("\n === Basic Info ===");
                 let mut table = Table::new();
                 table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
                 table.add_row(row!["English Title", en_title]);
@@ -165,7 +159,7 @@ async fn get_url(request: Vec<String>, what_type: &str) -> Result<Option<AnimeDa
                 // table.add_row(row!["Genre", a]);
                 table.printstd();
 
-                println!("\n=== Media Info ===");
+                println!("\n === Media Info ===");
                 let mut table2 = Table::new();
                 table2.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
                 table2.add_row(row!["Type", meta_type]);
@@ -173,7 +167,7 @@ async fn get_url(request: Vec<String>, what_type: &str) -> Result<Option<AnimeDa
                 table2.add_row(row!["Youtube", youtube_id]);
                 table2.printstd();
 
-                println!("\n=== Description ===");
+                println!("\n === Description ===");
                 let mut table3 = Table::new();
                 table3.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
                 table3.add_row(row![description]);
