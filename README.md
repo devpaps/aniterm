@@ -8,7 +8,7 @@ Planning for a release on homebrew soon for MacOS users
 
 
 If you have `Cargo` installed on you machine just run this in your terminal:
-`cargo add aniterm`
+`cargo install aniterm`
 
 
 ## Features

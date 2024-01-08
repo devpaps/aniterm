@@ -1,9 +1,7 @@
+use crate::structs::streaming::ApiStreamingResponse;
 use crate::structs::{AnimeData, ApiResponse};
 use clap::Parser;
-#[macro_use]
-extern crate prettytable;
-use prettytable::{format, Table};
-use reqwest;
+use prettytable::{format, row, Table};
 use serde::Deserialize;
 
 mod structs;
@@ -12,10 +10,8 @@ mod structs;
 #[derive(Parser, Debug, Deserialize)]
 #[command(about, long_about = None, version)]
 struct Cli {
-    /// The anime to look for
     #[arg(long, short, num_args = 1..)]
     anime: Vec<String>,
-    /// The manga to look for
     #[arg(long, short, num_args = 1..)]
     manga: Vec<String>,
 }
@@ -51,12 +47,96 @@ async fn get_url(
         }
         _ => println!("Error"),
     };
+
     let response: ApiResponse = reqwest::Client::new()
         .get(&url)
         .send()
         .await?
         .json()
         .await?;
+
+    if response
+        .data
+        .as_ref()
+        .expect("Something went wrong, try later")
+        .is_empty()
+    {
+        println!("\n Nothing found, search again with a different name");
+    }
+
+    let id = response
+        .data
+        .as_ref()
+        .and_then(|data| data.first())
+        .and_then(|anime| anime.id.clone());
+
+    let mut table4 = Table::new();
+    table4.set_format(*format::consts::FORMAT_BORDERS_ONLY);
+
+    if let Some(id) = id {
+        let streaming_urls = format!(
+            "https://kitsu.io/api/edge/anime/{:#?}/streaming-links",
+            id.parse::<i32>().unwrap()
+        );
+
+        let streaming_links_response: ApiStreamingResponse = reqwest::Client::new()
+            .get(&streaming_urls)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        match what_type {
+            "anime" => {
+                if let Some(streaming_links) = streaming_links_response.data {
+                    if streaming_links.is_empty() {
+                        table4.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+                        table4.add_row(row!["Url:", "Not available"]);
+                        table4.add_row(row!["Subs:", "Not available"]);
+                        table4.add_row(row!["Dubs:", "Not available"]);
+                    }
+                    for streaming_link in streaming_links {
+                        if let Some(attributes) = streaming_link.attributes {
+                            let subs = attributes
+                                .subs
+                                .as_ref()
+                                .map(|s| s.join(", "))
+                                .unwrap_or("Not available".to_string());
+
+                            let dubs = attributes
+                                .dubs
+                                .as_ref()
+                                .map(|d| d.join(", "))
+                                .unwrap_or("Not available".to_string());
+
+                            let url = attributes.url.unwrap_or("Not available".to_string());
+
+                            table4.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+                            table4.add_row(row!["Url:", url]);
+                            table4.add_row(row!["Subs:", subs]);
+                            table4.add_row(row!["Dubs:", dubs]);
+                        }
+                    }
+                }
+                println!("\n === Streaming Links ===");
+                table4.printstd();
+            }
+            "manga" => {
+                println!("\n === Streaming Links ===");
+                table4.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+                table4.add_row(row!["Url:", "Not available"]);
+                table4.add_row(row!["Subs:", "Not available"]);
+                table4.add_row(row!["Dubs:", "Not available"]);
+                table4.printstd();
+            }
+            _ => println!("Error getting streaming info"),
+        };
+    } else {
+        table4.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+        table4.add_row(row!["Url:", "Not available"]);
+        table4.add_row(row!["Subs:", "Not available"]);
+        table4.add_row(row!["Dubs:", "Not available"]);
+    }
 
     if let Some(anime_list) = response.data {
         anime_list.first().cloned().into_iter().for_each(|anime| {
@@ -84,15 +164,14 @@ async fn get_url(
                 let meta_type = anime.type_.unwrap_or("Not available".to_string());
                 let poster = attributes
                     .coverImage
-                    .as_ref()
                     .and_then(|p| p.original.clone())
                     .unwrap_or("Not available".to_string());
                 let youtube_id = if attributes.youtubeVideoId.is_some() {
                     format!(
                         "https://www.youtube.com/watch?v={}",
                         attributes
-                        .youtubeVideoId
-                        .unwrap_or("Not available".to_string())
+                            .youtubeVideoId
+                            .unwrap_or("Not available".to_string())
                     )
                 } else {
                     "Not available".to_string()
@@ -102,48 +181,29 @@ async fn get_url(
                 let description = attributes
                     .description
                     .unwrap_or("Not available".to_string());
+
                 let abbreviated_titles = attributes
                     .abbreviatedTitles
-                    .as_ref()
-                    .map(|a| a.join(", "))
-                    .unwrap_or("Not available".to_string());
+                    .and_then(|a| {
+                        if a.is_empty() {
+                            None
+                        } else {
+                            Some(a.join(",\n"))
+                        }
+                    })
+                    .unwrap_or_else(|| "Not available".to_string());
+
                 let episode_count = attributes
                     .episodeCount
                     .map(|e| e.to_string())
                     .unwrap_or("Not available".to_string());
+
                 let episode_length = attributes
                     .episodeLength
                     .map(|e| e.to_string())
                     .unwrap_or("Not available".to_string());
 
-                // NOTE: This is an alternative design for the table
-
-                // let table = table!(
-                //     [bFgi-> "English Title", en_title],
-                //     [bFgi-> "English (JP) Title", en_jp_title],
-                //     [bFgi-> "Japanese Title", ja_jp_title],
-                //     [bFgi-> "Rating", rating],
-                //     [bFgi-> "Started", started],
-                //     [bFgi-> "Ended", ended]
-                //
-                // );
-                //
-                // let table2 = table!(
-                //     [bFgi-> "Type", meta_type],
-                //     [bFgi-> "Poster", poster],
-                //     [bFgi-> "Youtube", youtube_id]
-                // );
-                // let mut table3 = table!(
-                //     [bFgi-> "Description"],
-                //     [description]
-                // );
-                //
-                // table.printstd();
-                // table2.printstd();
-                // table3.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-                // table3.printstd();
-
-                println!("\n === Basic Info ===");
+                println!("\n === Information ===");
                 let mut table = Table::new();
                 table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
                 table.add_row(row!["English Title", en_title]);
@@ -156,10 +216,9 @@ async fn get_url(
                 table.add_row(row!["Status", current_status]);
                 table.add_row(row!["Episode Count", episode_count]);
                 table.add_row(row!["Episode Length", episode_length]);
-                // table.add_row(row!["Genre", a]);
                 table.printstd();
 
-                println!("\n === Media Info ===");
+                println!("\n === Media ===");
                 let mut table2 = Table::new();
                 table2.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
                 table2.add_row(row!["Type", meta_type]);
@@ -176,6 +235,5 @@ async fn get_url(
             }
         });
     }
-
     Ok(None)
 }

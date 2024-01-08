@@ -1,3 +1,5 @@
+pub mod streaming;
+
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
