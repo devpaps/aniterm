@@ -7,7 +7,7 @@ AniTerm is a simple command-line tool that lets you search for and fetch detaile
 Planning for a release on homebrew soon for MacOS users
 
 
-If you have `Cargo` installed on you machine just run this in your terminal:
+If you have `Cargo` installed on **your** machine just run this in your terminal:
 `cargo install aniterm`
 
 
