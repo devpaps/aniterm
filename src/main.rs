@@ -10,19 +10,34 @@ mod structs;
 #[derive(Parser, Debug, Deserialize)]
 #[command(about, long_about = None, version)]
 struct Cli {
-    #[arg(long, short, num_args = 1..)]
-    anime: Vec<String>,
-    #[arg(long, short, num_args = 1..)]
-    manga: Vec<String>,
+    #[arg(
+        long,
+        short,
+        num_args = 1..,
+        conflicts_with = "manga",
+        required_unless_present = "manga",
+        value_name = "ANIME",
+    )]
+    anime: Option<Vec<String>>,
+    #[arg(
+        long,
+        short,
+        num_args = 1..,
+        conflicts_with = "anime",
+        required_unless_present = "anime",
+        value_name = "MANGA",
+    )]
+    manga: Option<Vec<String>>,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
-    match args.manga.is_empty() {
-        true => get_url(args.anime, "anime").await?,
-        false => get_url(args.manga, "manga").await?,
-    };
+    if let Some(anime) = args.anime {
+        get_url(anime, "anime").await?;
+    } else if let Some(manga) = args.manga {
+        get_url(manga, "manga").await?;
+    }
     Ok(())
 }
 
