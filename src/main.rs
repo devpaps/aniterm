@@ -1,6 +1,6 @@
 use crate::structs::streaming::ApiStreamingResponse;
 use crate::structs::{AnimeData, ApiResponse};
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 use prettytable::{format, row, Table};
 use serde::Deserialize;
 
@@ -9,23 +9,26 @@ mod structs;
 /// Search for a anime or manga and display some information about it
 #[derive(Parser, Debug, Deserialize)]
 #[command(about, long_about = None, version)]
+#[command(group(
+    ArgGroup::new("media")
+        .required(true)
+        .args(&["anime", "manga"])
+))]
 struct Cli {
     #[arg(
         long,
         short,
         num_args = 1..,
-        conflicts_with = "manga",
-        required_unless_present = "manga",
-        value_name = "ANIME",
+        value_name = "anime",
+        group = "media"
     )]
     anime: Option<Vec<String>>,
     #[arg(
         long,
         short,
         num_args = 1..,
-        conflicts_with = "anime",
-        required_unless_present = "anime",
-        value_name = "MANGA",
+        value_name = "manga",
+        group = "media"
     )]
     manga: Option<Vec<String>>,
 }
@@ -37,6 +40,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         get_url(anime, "anime").await?;
     } else if let Some(manga) = args.manga {
         get_url(manga, "manga").await?;
+    } else {
+        unreachable!("Either anime or manga must be present due to clap ArgGroup enforcement");
     }
     Ok(())
 }
