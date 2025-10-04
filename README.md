@@ -1,5 +1,7 @@
 # AniTerm
 
+![Aniterm](./aniterm.png)
+
 ## Description
 AniTerm is a simple command-line tool that lets you search for and fetch detailed information about anime and manga series. Whether you're looking for the next series to binge-watch or just curious about a particular anime, this tool has got you covered. This command-line tool is using Kitsu API for fetching the data.
 
